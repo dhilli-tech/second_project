@@ -1,0 +1,4 @@
+Navigate to https://login.veevavault.com/auth/login
+Log in with username {username} and password {password}
+Then User logs out by clicking the Profile icon and selecting Log out
+And User closes the browser

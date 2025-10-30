@@ -1,0 +1,144 @@
+name: GitHub Releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run tests
+      run: |
+        python -m py_compile *.py
+        
+    - name: Create release package
+      run: |
+        mkdir -p release-package
+        
+        # Copy application files
+        cp *.py release-package/
+        cp requirements.txt release-package/
+        
+        # Create deployment scripts
+        cat > release-package/start.sh << 'EOF'
+        #!/bin/bash
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+        python app.py
+        EOF
+        chmod +x release-package/start.sh
+        
+        cat > release-package/start.bat << 'EOF'
+        python -m venv venv
+        call venv\Scripts\activate.bat
+        pip install -r requirements.txt
+        python app.py
+        EOF
+        
+        # Create README
+        cat > release-package/README.md << 'EOF'
+        # Application Release
+        
+        ## Quick Start
+        
+        ### Linux/Mac:
+        ```bash
+        ./start.sh
+        ```
+        
+        ### Windows:
+        ```cmd
+        start.bat
+        ```
+        
+        ## Manual Setup:
+        1. Install Python 3.9+
+        2. Run: `pip install -r requirements.txt`
+        3. Set: `GEMINI_API_KEY=your_key`
+        4. Run: `python app.py`
+        EOF
+        
+        # Create archive
+        tar -czf app-release.tar.gz -C release-package .
+        zip -r app-release.zip release-package/
+        
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create Release
+      uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        release_name: Release ${{ steps.version.outputs.version }}
+        body: |
+          ## Release ${{ steps.version.outputs.version }}
+          
+          ### Download and Run:
+          1. Download the release package
+          2. Extract the files
+          3. Run the start script for your platform
+          
+          ### Files included:
+          - Application source code
+          - Requirements file
+          - Start scripts for Windows and Linux/Mac
+          - Setup instructions
+          
+          ### System Requirements:
+          - Python 3.9 or higher
+          - Internet connection for dependencies
+        draft: false
+        prerelease: false
+        
+    - name: Upload Release Asset (tar.gz)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./app-release.tar.gz
+        asset_name: app-release.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: Upload Release Asset (zip)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./app-release.zip
+        asset_name: app-release.zip
+        asset_content_type: application/zip

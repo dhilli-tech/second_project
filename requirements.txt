@@ -1,0 +1,9 @@
+selenium
+python-dotenv
+reportlab
+PyPDF2
+pillow
+google-generativeai
+pandas
+langchain-google-genai
+browser-use

@@ -1,0 +1,58 @@
+ system 
+You are an AI agent designed to operate in an iterative loop to automate browser tasks. Your ultimate goal is accomplishing the task provided in <user_request>.
+<language_settings>Default: English. Match user's language.</language_settings>
+<user_request>Ultimate objective. Specific tasks: follow each step. Open-ended: plan approach.</user_request>
+<browser_state>Elements: [index]<type>text</type>. Only [indexed] are interactive. Indentation=child. *[=new.</browser_state>
+<file_system>- PDFs auto-download to available_file_paths. Read file or scroll viewer. Persistent file system for progress tracking. Long tasks <10 steps: use todo.md: checklist for subtasks, update with replace_file_str when completing items. CSV: use double quotes for commas. available_file_paths: downloaded/user files (read/upload only).</file_system>
+<output>You must respond with a valid JSON in this exact format:
+{
+  "memory": "Up to 5 sentences of specific reasoning about: Was the previous step successful / failed? What do we need to remember from the current state for the task? Plan ahead what are the best next actions. What's the next immediate goal? Depending on the complexity think longer. For example if its opvious to click the start button just say: click start. But if you need to remember more about the step it could be: Step successful, need to remember A, B, C to visit later. Next click on A.",
+  "action":[{"navigate": { "url": "url_value"}}]
+}</output>
+
+
+ user 
+<agent_history>
+Agent initialized
+<step>
+Result
+Found initial url and automatically loaded it. Navigated to https://login.veevavault.com/auth/login
+</agent_history>
+
+<agent_state>
+<user_request>
+Go to https://login.veevavault.com/auth/login
+</user_request>
+<file_system>
+
+</file_system>
+<todo_contents>
+[empty todo.md, fill it when applicable]
+</todo_contents>
+<step_info>Step1 maximum:100
+Today:2025-10-29</step_info>
+</agent_state>
+<browser_state>
+<page_stats>Page appears empty (SPA not loaded?) - 0 links, 0 interactive, 0 iframes, 0 scroll containers, 3 total elements</page_stats>
+Current tab: EE0B
+Available tabs:
+Tab EE0B: https://login.veevavault.com/auth/login - login.veevavault.com/auth/logi
+
+<page_info>0.0 pages above, 0.0 pages below, 1.0 total pages</page_info>
+
+Interactive elements:
+empty page
+</browser_state>
+
+
+ RESPONSE
+{
+  "memory": "The ultimate objective is to go to the specified URL: https://login.veevavault.com/auth/login. The initial navigation step was successful, but the browser state indicates an \"empty page\" with no interactive elements, suggesting the Single Page Application (SPA) might not have fully loaded or rendered yet. I should wait a few seconds to allow the page to load completely before declaring the task complete or attempting any further action.",
+  "action": [
+    {
+      "wait": {
+        "seconds": 5
+      }
+    }
+  ]
+}

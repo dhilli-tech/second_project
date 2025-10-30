@@ -1,0 +1,154 @@
+name: Local Deployment Package
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  create-local-package:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create deployment script
+      run: |
+        cat > deploy.sh << 'EOF'
+        #!/bin/bash
+        echo "Setting up local deployment..."
+        
+        # Check Python installation
+        if ! command -v python3 &> /dev/null; then
+            echo "Python 3 is required but not installed."
+            exit 1
+        fi
+        
+        # Create virtual environment
+        python3 -m venv venv
+        source venv/bin/activate
+        
+        # Install dependencies
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        
+        # Set environment variables
+        export GEMINI_API_KEY="${GEMINI_API_KEY:-your_api_key_here}"
+        
+        # Run application
+        echo "Starting application..."
+        python app.py
+        EOF
+        chmod +x deploy.sh
+        
+    - name: Create Windows deployment script
+      run: |
+        cat > deploy.bat << 'EOF'
+        @echo off
+        echo Setting up local deployment...
+        
+        REM Check Python installation
+        python --version >nul 2>&1
+        if errorlevel 1 (
+            echo Python is required but not installed.
+            exit /b 1
+        )
+        
+        REM Create virtual environment
+        python -m venv venv
+        call venv\Scripts\activate.bat
+        
+        REM Install dependencies
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        
+        REM Set environment variables
+        set GEMINI_API_KEY=%GEMINI_API_KEY%
+        if "%GEMINI_API_KEY%"=="" set GEMINI_API_KEY=your_api_key_here
+        
+        REM Run application
+        echo Starting application...
+        python app.py
+        EOF
+        
+    - name: Create README for deployment
+      run: |
+        cat > DEPLOYMENT.md << 'EOF'
+        # Local Deployment Guide
+        
+        ## Prerequisites
+        - Python 3.9 or higher
+        - Git (optional)
+        
+        ## Quick Start
+        
+        ### Linux/Mac:
+        ```bash
+        chmod +x deploy.sh
+        ./deploy.sh
+        ```
+        
+        ### Windows:
+        ```cmd
+        deploy.bat
+        ```
+        
+        ## Manual Setup
+        
+        1. Create virtual environment:
+        ```bash
+        python -m venv venv
+        source venv/bin/activate  # Linux/Mac
+        # or
+        venv\Scripts\activate.bat  # Windows
+        ```
+        
+        2. Install dependencies:
+        ```bash
+        pip install -r requirements.txt
+        ```
+        
+        3. Set environment variables:
+        ```bash
+        export GEMINI_API_KEY="your_api_key_here"  # Linux/Mac
+        # or
+        set GEMINI_API_KEY=your_api_key_here  # Windows
+        ```
+        
+        4. Run the application:
+        ```bash
+        python app.py
+        ```
+        
+        ## Configuration
+        
+        Create a `.env` file in the project root:
+        ```
+        GEMINI_API_KEY=your_actual_api_key_here
+        ```
+        
+        ## Troubleshooting
+        
+        - Ensure all dependencies are installed
+        - Check Python version compatibility
+        - Verify API key is set correctly
+        - Check firewall settings if needed
+        EOF
+        
+    - name: Package for deployment
+      run: |
+        mkdir -p deployment-package
+        cp *.py deployment-package/
+        cp requirements.txt deployment-package/
+        cp deploy.sh deployment-package/
+        cp deploy.bat deployment-package/
+        cp DEPLOYMENT.md deployment-package/
+        cp .env deployment-package/ 2>/dev/null || echo "GEMINI_API_KEY=your_api_key_here" > deployment-package/.env
+        tar -czf local-deployment-${{ github.sha }}.tar.gz -C deployment-package .
+        
+    - name: Upload deployment package
+      uses: actions/upload-artifact@v3
+      with:
+        name: local-deployment
+        path: local-deployment-${{ github.sha }}.tar.gz
+        retention-days: 30
